@@ -1,16 +1,47 @@
-# Virtual environment
-.venv/
-
-# Environment variables file
+# Environment & Secrets
 .env
+.env.local
+.env.*.local
 
-# Python cache
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache & compiled files
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
 
-# Output data
-output/
-
-# Editor files
+# IDE & Editor
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build & Distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Output & Data
+output/
+logs/
+*.log
+*.csv
+*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
