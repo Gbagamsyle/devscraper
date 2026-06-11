@@ -1,0 +1,16 @@
+# Virtual environment
+.venv/
+
+# Environment variables file
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Output data
+output/
+
+# Editor files
+.vscode/
+
