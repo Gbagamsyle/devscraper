@@ -1,7 +1,21 @@
-flask
-requests
-python-dotenv
-pandas
-colorama
-feedparser
-gunicorn
+# Job Scraper Dependencies
+
+# Core HTTP & data processing
+requests>=2.31.0
+python-dotenv>=1.0.0
+feedparser>=6.0.0
+
+# Data handling
+pandas>=2.0.0
+
+# CLI & logging
+colorama>=0.4.6
+
+# Optional: Web server
+flask>=2.3.0
+gunicorn>=21.0.0
+
+# Development (optional)
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0

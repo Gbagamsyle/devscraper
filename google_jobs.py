@@ -1,24 +1,18 @@
-import os, requests, json
-from dotenv import load_dotenv
+"""Google Jobs scraper using Serper API."""
+import json
+import requests
+from typing import List, Dict, Any
+from config import SERPER_KEY, NIGERIA_QUERIES, GLOBAL_QUERIES, TIMEOUT
+from utils import retry_with_backoff, deduplicate_jobs, logger
 
-load_dotenv()
-SERPER_KEY = os.getenv("SERPER_KEY")
 
-QUERIES = [
-    "frontend developer Nigeria",
-    "web developer remote Nigeria",
-    "React developer Lagos Abuja",
-    "frontend developer remote Africa",
-    "JavaScript developer Nigeria",
-]
-
-GLOBAL_QUERIES = [
-    "frontend developer remote",
-    "web developer remote Europe",
-    "React developer remote USA",
-]
-
-def search_serper_jobs(query, num=20):
+@retry_with_backoff()
+def search_serper_jobs(query: str, num: int = 20) -> List[Dict[str, Any]]:
+    """Search for jobs using Serper API."""
+    if not SERPER_KEY:
+        logger.warning("SERPER_KEY not set; skipping Google Jobs scraper")
+        return []
+    
     headers = {
         "X-API-KEY": SERPER_KEY,
         "Content-Type": "application/json",
@@ -29,7 +23,13 @@ def search_serper_jobs(query, num=20):
         "gl": "ng",
         "hl": "en",
     }
-    resp = requests.post("https://google.serper.dev/search", headers=headers, json=payload)
+    
+    resp = requests.post(
+        "https://google.serper.dev/search",
+        headers=headers,
+        json=payload,
+        timeout=TIMEOUT
+    )
     resp.raise_for_status()
     data = resp.json()
 
@@ -48,26 +48,23 @@ def search_serper_jobs(query, num=20):
         })
     return jobs
 
-def run_google_scraper(include_global=False):
+
+def run_google_scraper(include_global: bool = False) -> List[Dict[str, Any]]:
+    """Run Google Jobs scraper."""
     all_jobs = []
-    queries = QUERIES + (GLOBAL_QUERIES if include_global else [])
+    queries = NIGERIA_QUERIES + (GLOBAL_QUERIES if include_global else [])
+    
     for q in queries:
-        print(f"  Searching: {q}")
+        logger.info(f"Searching Google Jobs: {q}")
         try:
             jobs = search_serper_jobs(q)
             all_jobs.extend(jobs)
-            print(f"    → {len(jobs)} results")
+            logger.info(f"  Found {len(jobs)} results")
         except Exception as e:
-            print(f"    ✗ Error: {e}")
+            logger.error(f"  Error searching '{q}': {e}")
+            continue
 
-    seen = set()
-    unique = []
-    for j in all_jobs:
-        key = (str(j.get("title", "")).lower(), str(j.get("company", "")).lower())
-        if key not in seen:
-            seen.add(key)
-            unique.append(j)
-    return unique
+    return deduplicate_jobs(all_jobs)
 
 if __name__ == "__main__":
     jobs = run_google_scraper(include_global=True)

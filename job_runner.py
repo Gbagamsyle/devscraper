@@ -1,13 +1,23 @@
-import json, csv, os, sys
+"""Main job scraper orchestrator with concurrent execution."""
+import json
+import csv
+import os
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict, Any
+
 from colorama import Fore, Style, init
+from config import OUTPUT_DIR, NIGERIA_BOOST_KEYWORDS, MAX_WORKERS
+from utils import logger, deduplicate_jobs
 
 init(autoreset=True)
 
-# Import your scrapers
+# Import scrapers
 from google_jobs import run_google_scraper
 from twitter_jobs import run_twitter_scraper
 from free_boards import run_free_scraper
+from scrapers import run_alternative_scrapers
+
 
 CONFIG = {
     "include_global": True,    # set False for Nigeria-only
@@ -15,16 +25,14 @@ CONFIG = {
         "google": True,
         "twitter": True,       # needs TWITTER_BEARER in .env
         "free_boards": True,   # RemoteOK + LinkedIn, no key needed
+        "alternative": False,  # Jobicy + Remotive (optional)
     },
-    "output_dir": "./output",
+    "output_dir": OUTPUT_DIR,
 }
 
-NIGERIA_BOOST_KEYWORDS = [
-    "nigeria", "lagos", "abuja", "port harcourt", "kano",
-    "ibadan", "remote africa", "african", "naira",
-]
 
-def tag_nigeria(job):
+def tag_nigeria(job: Dict[str, Any]) -> Dict[str, Any]:
+    """Tag job as Nigeria-relevant based on keywords."""
     text = " ".join([
         str(job.get("title") or ""),
         str(job.get("location") or ""),
@@ -33,76 +41,100 @@ def tag_nigeria(job):
     job["nigeria_relevant"] = any(k in text for k in NIGERIA_BOOST_KEYWORDS)
     return job
 
-def deduplicate(jobs):
-    seen, out = set(), []
-    for j in jobs:
-        key = (
-            str(j.get("title", "")).lower().strip(),
-            str(j.get("company", "")).lower().strip(),
-        )
-        if key not in seen and key != ("", ""):
-            seen.add(key)
-            out.append(j)
-    return out
 
-def save_results(jobs, output_dir):
+def save_results(jobs: List[Dict[str, Any]], output_dir: str) -> tuple:
+    """Save results to JSON and CSV files."""
     os.makedirs(output_dir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M")
 
     json_path = f"{output_dir}/jobs_{ts}.json"
-    csv_path  = f"{output_dir}/jobs_{ts}.csv"
+    csv_path = f"{output_dir}/jobs_{ts}.csv"
 
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(jobs, f, indent=2, default=str)
 
-    fields = ["title","company","location","posted","salary",
-              "apply_link","source","nigeria_relevant","description"]
+    fields = [
+        "title", "company", "location", "posted", "salary",
+        "apply_link", "source", "nigeria_relevant", "description"
+    ]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(jobs)
 
-    print(f"\n{Fore.GREEN}Saved:{Style.RESET_ALL}")
-    print(f"  JSON → {json_path}")
-    print(f"  CSV  → {csv_path}")
+    logger.info(f"Results saved: {json_path} | {csv_path}")
     return json_path, csv_path
 
-def main():
+
+def run_scrapers_concurrent(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Run all enabled scrapers concurrently."""
     all_jobs = []
-    cfg = CONFIG
-
+    
+    scrapers = []
     if cfg["sources"]["google"]:
-        print(f"\n{Fore.CYAN}[1/3] Google Jobs (SerpAPI){Style.RESET_ALL}")
-        jobs = run_google_scraper(include_global=cfg["include_global"])
-        print(f"  Google total: {len(jobs)}")
-        all_jobs.extend(jobs)
-
+        scrapers.append(("Google Jobs", lambda: run_google_scraper(cfg["include_global"])))
     if cfg["sources"]["twitter"]:
-        print(f"\n{Fore.CYAN}[2/3] Twitter / X{Style.RESET_ALL}")
-        jobs = run_twitter_scraper(include_global=cfg["include_global"])
-        print(f"  Twitter total: {len(jobs)}")
-        all_jobs.extend(jobs)
-
+        scrapers.append(("Twitter/X", lambda: run_twitter_scraper(cfg["include_global"])))
     if cfg["sources"]["free_boards"]:
-        print(f"\n{Fore.CYAN}[3/3] Free Boards (RemoteOK + LinkedIn){Style.RESET_ALL}")
-        jobs = run_free_scraper()
-        print(f"  Free boards total: {len(jobs)}")
-        all_jobs.extend(jobs)
+        scrapers.append(("Free Boards", lambda: run_free_scraper()))
+    if cfg["sources"].get("alternative"):
+        scrapers.append(("Alternative Sources", lambda: run_alternative_scrapers()))
+    
+    logger.info(f"Running {len(scrapers)} scrapers concurrently...")
+    print(f"\n{Fore.CYAN}Running {len(scrapers)} job scrapers...{Style.RESET_ALL}")
+    
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {executor.submit(func): name for name, func in scrapers}
+        
+        for future in as_completed(futures):
+            scraper_name = futures[future]
+            try:
+                jobs = future.result()
+                all_jobs.extend(jobs)
+                print(f"{Fore.GREEN}✓{Style.RESET_ALL} {scraper_name}: {len(jobs)} jobs")
+                logger.info(f"{scraper_name}: {len(jobs)} jobs")
+            except Exception as e:
+                print(f"{Fore.RED}✗{Style.RESET_ALL} {scraper_name}: {e}")
+                logger.error(f"{scraper_name} failed: {e}")
+    
+    return all_jobs
 
-    # Tag & deduplicate
+
+def main():
+    """Main orchestrator."""
+    logger.info("=" * 60)
+    logger.info("Starting job scraper...")
+    
+    cfg = CONFIG
+    
+    # Run all scrapers concurrently
+    all_jobs = run_scrapers_concurrent(cfg)
+    
+    # Post-process: tag & deduplicate
+    logger.info(f"Processing {len(all_jobs)} jobs...")
     all_jobs = [tag_nigeria(j) for j in all_jobs]
-    all_jobs = deduplicate(all_jobs)
-
+    all_jobs = deduplicate_jobs(all_jobs)
+    
     # Sort: Nigeria-relevant first
     all_jobs.sort(key=lambda x: (not x.get("nigeria_relevant", False)))
-
+    
     ng_count = sum(1 for j in all_jobs if j.get("nigeria_relevant"))
+    
     print(f"\n{Fore.YELLOW}Summary:{Style.RESET_ALL}")
     print(f"  Total unique jobs : {len(all_jobs)}")
     print(f"  Nigeria-relevant  : {ng_count}")
     print(f"  Global/remote     : {len(all_jobs) - ng_count}")
+    
+    # Save results
+    json_path, csv_path = save_results(all_jobs, cfg["output_dir"])
+    
+    print(f"\n{Fore.GREEN}Saved:{Style.RESET_ALL}")
+    print(f"  JSON → {json_path}")
+    print(f"  CSV  → {csv_path}")
+    
+    logger.info(f"Complete: {len(all_jobs)} jobs ({ng_count} Nigeria-relevant)")
+    logger.info("=" * 60)
 
-    save_results(all_jobs, cfg["output_dir"])
 
 if __name__ == "__main__":
     main()
