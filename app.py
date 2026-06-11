@@ -32,7 +32,8 @@ HTML = """
   #refresh-btn:disabled { background: #888; cursor: not-allowed; }
   .stats { padding: 1rem 2rem; font-size: 13px; color: #666; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 0 2rem 2rem; }
-  .card { background: #fff; border-radius: 12px; border: 1px solid #e5e5e0; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e5e5e0; padding: 16px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: all 0.2s; }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
   .card-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
   .card-company { font-size: 13px; color: #555; }
   .card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
@@ -45,6 +46,16 @@ HTML = """
   .apply-btn:hover { background: #333; }
   #status { font-size: 13px; color: #f59e0b; font-weight: 500; }
   .empty { text-align: center; padding: 4rem; color: #999; grid-column: 1/-1; }
+  #modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; }
+  #modal.active { display: flex; align-items: center; justify-content: center; }
+  .modal-content { background: #fff; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 32px; position: relative; }
+  .close { position: absolute; top: 16px; right: 16px; font-size: 28px; font-weight: 700; cursor: pointer; color: #999; }
+  .close:hover { color: #1a1a1a; }
+  .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .modal-company { font-size: 16px; color: #666; margin-bottom: 16px; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-field-label { font-size: 12px; font-weight: 700; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+  .modal-field-value { font-size: 14px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -57,20 +68,24 @@ HTML = """
       <option value="serper">Google (Serper)</option>
       <option value="linkedin">LinkedIn</option>
       <option value="remoteok">RemoteOK</option>
-      <option value="jobicy">Jobicy</option>
-      <option value="remotive">Remotive</option>
     </select>
     <select id="location-filter" onchange="filter()">
       <option value="">All locations</option>
       <option value="nigeria">Nigeria only</option>
       <option value="remote">Remote only</option>
     </select>
-    <span id="status"></span>
     <button id="refresh-btn" onclick="refresh()">Refresh jobs</button>
   </div>
 </header>
 <div class="stats" id="stats"></div>
 <div class="grid" id="grid"></div>
+
+<div id="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <div id="modal-body"></div>
+  </div>
+</div>
 
 <script>
 let allJobs = [];
@@ -90,14 +105,11 @@ function filter() {
     const text = ((j.title || '') + ' ' + (j.company || '')).toLowerCase();
     const matchQ = !q || text.includes(q);
     const matchSrc = !src || (j.source || '').includes(src);
-    const matchLoc = !loc
-      || (loc === 'nigeria' && j.nigeria_relevant)
-      || (loc === 'remote' && j.remote);
+    const matchLoc = !loc || (loc === 'nigeria' && j.nigeria_relevant) || (loc === 'remote' && j.location.toLowerCase().includes('remote'));
     return matchQ && matchSrc && matchLoc;
   });
 
-  document.getElementById('stats').textContent =
-    `Showing ${filtered.length} of ${allJobs.length} jobs`;
+  document.getElementById('stats').textContent = `Showing ${filtered.length} of ${allJobs.length} jobs`;
 
   const grid = document.getElementById('grid');
   if (!filtered.length) {
@@ -105,26 +117,57 @@ function filter() {
     return;
   }
 
-  grid.innerHTML = filtered.map(j => `
-    <div class="card">
+  grid.innerHTML = filtered.map((j, idx) => `
+    <div class="card" onclick="showDetails(${allJobs.indexOf(j)})">
       <div class="card-title">${j.title || 'Untitled'}</div>
       <div class="card-company">${j.company || 'Unknown company'}</div>
       <div class="card-meta">
         ${j.nigeria_relevant ? '<span class="badge badge-ng">Nigeria</span>' : ''}
-        ${j.remote ? '<span class="badge badge-remote">Remote</span>' : ''}
+        ${j.location && j.location.toLowerCase().includes('remote') ? '<span class="badge badge-remote">Remote</span>' : ''}
         <span class="badge badge-source">${j.source || ''}</span>
       </div>
       <div class="card-desc">${(j.description || '').substring(0, 200)}${j.description && j.description.length > 200 ? '...' : ''}</div>
-      ${j.apply_link ? `<a class="apply-btn" href="${j.apply_link}" target="_blank" rel="noopener">Apply</a>` : ''}
+      <span style="font-size: 12px; color: #999; margin-top: 8px;">👆 Click for details</span>
     </div>
   `).join('');
 }
 
+function showDetails(idx) {
+  const j = allJobs[idx];
+  const html = `
+    <div class="modal-title">${j.title}</div>
+    <div class="modal-company">${j.company}</div>
+    
+    ${j.location ? `<div class="modal-field"><div class="modal-field-label">Location</div><div class="modal-field-value">📍 ${j.location}</div></div>` : ''}
+    ${j.salary ? `<div class="modal-field"><div class="modal-field-label">Salary</div><div class="modal-field-value">💰 ${j.salary}</div></div>` : ''}
+    ${j.posted ? `<div class="modal-field"><div class="modal-field-label">Posted</div><div class="modal-field-value">📅 ${j.posted}</div></div>` : ''}
+    <div class="modal-field"><div class="modal-field-label">Source</div><div class="modal-field-value">🔗 ${j.source}</div></div>
+    ${j.nigeria_relevant ? '<div class="modal-field"><div class="modal-field-label">Nigeria Relevant</div><div class="modal-field-value">✓ Yes</div></div>' : ''}
+    
+    ${j.description ? `<div class="modal-field"><div class="modal-field-label">Description</div><div class="modal-field-value">${j.description.replace(/\\n/g, '<br>')}</div></div>` : ''}
+    
+    ${j.apply_link ? `<div style="margin-top: 24px;"><a class="apply-btn" href="${j.apply_link}" target="_blank" style="display: block; text-align: center; padding: 12px;">Apply on external site →</a></div>` : ''}
+  `;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') closeModal();
+});
+
 async function refresh() {
   const btn = document.getElementById('refresh-btn');
-  const status = document.getElementById('status');
   btn.disabled = true;
-  status.textContent = 'Scraping jobs...';
+  btn.textContent = 'Scraping...';
   try {
     await fetch('/api/refresh', { method: 'POST' });
     let done = false;
@@ -135,16 +178,14 @@ async function refresh() {
       if (!data.running) {
         done = true;
         await loadJobs();
-        status.textContent = 'Done!';
-        setTimeout(() => status.textContent = '', 3000);
-      } else {
-        status.textContent = 'Still scraping...';
+        btn.textContent = 'Done! Refresh jobs';
+        setTimeout(() => { btn.textContent = 'Refresh jobs'; btn.disabled = false; }, 2000);
       }
     }
   } catch(e) {
-    status.textContent = 'Error — check terminal';
+    btn.textContent = 'Error - check console';
+    btn.disabled = false;
   }
-  btn.disabled = false;
 }
 
 loadJobs();
