@@ -15,6 +15,9 @@ colorama>=0.4.6
 flask>=2.3.0
 gunicorn>=21.0.0
 
+# HTML parsing
+beautifulsoup4>=4.12.2
+
 # Development (optional)
 # pytest>=7.0.0
 # black>=23.0.0

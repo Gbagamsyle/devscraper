@@ -35,25 +35,53 @@ def search_serper_jobs(query: str, num: int = 20) -> List[Dict[str, Any]]:
 
     jobs = []
     for job in data.get("jobs", []) + data.get("organic", []):
+        # Prefer structured fields but fall back to common alternatives
+        company = job.get("companyName") or job.get("displayedLink") or job.get("source")
+        apply_link = job.get("applyLink") or job.get("link") or job.get("url")
+        description = job.get("description", "") or job.get("snippet", "")
+
+        # If key fields are missing, try following the result link to extract them
+        candidate_url = apply_link or job.get("link") or job.get("url")
+        if (not company or not apply_link) and candidate_url:
+            try:
+                from utils import fetch_page_details
+                details = fetch_page_details(candidate_url)
+                if not company and details.get('company'):
+                    company = details.get('company')
+                if not apply_link and details.get('apply_link'):
+                    apply_link = details.get('apply_link')
+            except Exception as e:
+                logger.debug(f"Error following result link {candidate_url}: {e}")
+
+        if not company:
+            logger.debug(f"Serper result missing company for title='{job.get('title')}'")
+        if not apply_link:
+            logger.debug(f"Serper result missing apply link for title='{job.get('title')}'")
+
         jobs.append({
             "title": job.get("title"),
-            "company": job.get("companyName"),
+            "company": company,
             "location": job.get("location"),
             "posted": job.get("datePosted"),
             "salary": job.get("salary"),
             "remote": job.get("workFromHome", False),
-            "apply_link": job.get("applyLink"),
-            "description": job.get("description", "")[:300],
+            "apply_link": apply_link,
+            "description": (description or "")[:300],
             "source": "serper",
         })
     return jobs
 
 
-def run_google_scraper(include_global: bool = False) -> List[Dict[str, Any]]:
-    """Run Google Jobs scraper."""
+def run_google_scraper(include_global: bool = False, queries: List[str] = None) -> List[Dict[str, Any]]:
+    """Run Google Jobs scraper.
+
+    If `queries` is provided, those queries will be used. Otherwise fall back to
+    the default Nigeria + optional global queries.
+    """
     all_jobs = []
-    queries = NIGERIA_QUERIES + (GLOBAL_QUERIES if include_global else [])
-    
+    if queries is None:
+        queries = NIGERIA_QUERIES + (GLOBAL_QUERIES if include_global else [])
+
     for q in queries:
         logger.info(f"Searching Google Jobs: {q}")
         try:

@@ -23,6 +23,17 @@ GLOBAL_QUERIES = [
     "React developer remote USA",
 ]
 
+# Countries to include in broader scraping (adds country-specific queries)
+COUNTRIES = ["Nigeria", "Kenya", "Ghana" , "South Africa", "Egypt", "Remote", "Africa", "Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "United States", "United Kingdom", "Germany", "France", "India", "Philippines"]
+
+# Base role queries used to generate country-specific searches
+BASE_QUERIES = [
+    "frontend developer",
+    "web developer",
+    "React developer",
+    "JavaScript developer",
+]
+
 LINKEDIN_SEARCHES = [
     ("frontend developer", "Nigeria"),
     ("web developer", "Lagos, Nigeria"),
