@@ -55,3 +55,64 @@
 2026-06-12 00:37:47 [job_scraper] [INFO] Results saved: ./output/jobs_20260612_0037.json | ./output/jobs_20260612_0037.csv
 2026-06-12 00:37:47 [job_scraper] [INFO] Complete: 101 jobs (50 Nigeria-relevant)
 2026-06-12 00:37:47 [job_scraper] [INFO] ============================================================
+2026-06-12 01:19:29 [job_scraper] [INFO] ============================================================
+2026-06-12 01:19:29 [job_scraper] [INFO] Starting job scraper...
+2026-06-12 01:19:29 [job_scraper] [INFO] Running 3 scrapers concurrently...
+2026-06-12 01:19:29 [job_scraper] [INFO] Searching Google Jobs: frontend developer Nigeria
+2026-06-12 01:19:29 [job_scraper] [INFO] Searching Twitter: frontend developer
+2026-06-12 01:19:29 [job_scraper] [INFO] Running RemoteOK scraper...
+2026-06-12 01:19:30 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=frontend+developer+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-12 01:19:30 [job_scraper] [INFO]   Found 0 results
+2026-06-12 01:19:30 [job_scraper] [INFO] Searching Twitter: React developer
+2026-06-12 01:19:31 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=React+developer+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-12 01:19:31 [job_scraper] [INFO]   Found 0 results
+2026-06-12 01:19:31 [job_scraper] [INFO] Searching Twitter: JavaScript developer
+2026-06-12 01:19:31 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:31 [job_scraper] [INFO] Searching Google Jobs: web developer remote Nigeria
+2026-06-12 01:19:31 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=JavaScript+developer+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-12 01:19:31 [job_scraper] [INFO]   Found 0 results
+2026-06-12 01:19:31 [job_scraper] [INFO] Searching Twitter: web developer Nigeria
+2026-06-12 01:19:32 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=web+developer+Nigeria+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-12 01:19:32 [job_scraper] [INFO]   Found 0 results
+2026-06-12 01:19:32 [job_scraper] [INFO] Searching Twitter: remote developer jobs
+2026-06-12 01:19:32 [job_scraper] [INFO] RemoteOK: Found 11 dev jobs
+2026-06-12 01:19:32 [job_scraper] [INFO] Running LinkedIn scraper...
+2026-06-12 01:19:32 [job_scraper] [INFO]   Searching: frontend developer / Nigeria
+2026-06-12 01:19:33 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:33 [job_scraper] [INFO] Searching Google Jobs: React developer Lagos Abuja
+2026-06-12 01:19:33 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=remote+developer+jobs+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-12 01:19:33 [job_scraper] [INFO]   Found 0 results
+2026-06-12 01:19:33 [job_scraper] [INFO] Searching Twitter: hiring engineers
+2026-06-12 01:19:33 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'frontend developer' in Nigeria
+2026-06-12 01:19:33 [job_scraper] [INFO]   Searching: web developer / Lagos, Nigeria
+2026-06-12 01:19:34 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=hiring+engineers+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-12 01:19:34 [job_scraper] [INFO]   Found 0 results
+2026-06-12 01:19:34 [job_scraper] [DEBUG] Deduplication: 0 → 0 jobs
+2026-06-12 01:19:34 [job_scraper] [INFO] Twitter/X: 0 jobs
+2026-06-12 01:19:34 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'web developer' in Lagos, Nigeria
+2026-06-12 01:19:34 [job_scraper] [INFO]   Searching: React developer / Nigeria
+2026-06-12 01:19:35 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:35 [job_scraper] [INFO] Searching Google Jobs: frontend developer remote Africa
+2026-06-12 01:19:36 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'React developer' in Nigeria
+2026-06-12 01:19:36 [job_scraper] [INFO]   Searching: frontend developer / Remote
+2026-06-12 01:19:36 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:36 [job_scraper] [INFO] Searching Google Jobs: JavaScript developer Nigeria
+2026-06-12 01:19:37 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'frontend developer' in Remote
+2026-06-12 01:19:37 [job_scraper] [INFO]   Searching: JavaScript developer / Africa
+2026-06-12 01:19:38 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'JavaScript developer' in Africa
+2026-06-12 01:19:38 [job_scraper] [DEBUG] Deduplication: 61 → 36 jobs
+2026-06-12 01:19:38 [job_scraper] [INFO] Free Boards: 36 jobs
+2026-06-12 01:19:38 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:38 [job_scraper] [INFO] Searching Google Jobs: frontend developer remote
+2026-06-12 01:19:40 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:40 [job_scraper] [INFO] Searching Google Jobs: web developer remote Europe
+2026-06-12 01:19:41 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:41 [job_scraper] [INFO] Searching Google Jobs: React developer remote USA
+2026-06-12 01:19:43 [job_scraper] [INFO]   Found 10 results
+2026-06-12 01:19:43 [job_scraper] [DEBUG] Deduplication: 80 → 74 jobs
+2026-06-12 01:19:43 [job_scraper] [INFO] Google Jobs: 74 jobs
+2026-06-12 01:19:43 [job_scraper] [INFO] Processing 110 jobs...
+2026-06-12 01:19:43 [job_scraper] [DEBUG] Deduplication: 110 → 110 jobs
+2026-06-12 01:19:43 [job_scraper] [INFO] Results saved: ./output/jobs_20260612_0119.json | ./output/jobs_20260612_0119.csv
+2026-06-12 01:19:43 [job_scraper] [INFO] Complete: 110 jobs (59 Nigeria-relevant)
+2026-06-12 01:19:43 [job_scraper] [INFO] ============================================================

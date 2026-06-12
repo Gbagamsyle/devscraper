@@ -105,7 +105,7 @@ function filter() {
     const text = ((j.title || '') + ' ' + (j.company || '')).toLowerCase();
     const matchQ = !q || text.includes(q);
     const matchSrc = !src || (j.source || '').includes(src);
-    const matchLoc = !loc || (loc === 'nigeria' && j.nigeria_relevant) || (loc === 'remote' && j.location.toLowerCase().includes('remote'));
+    const matchLoc = !loc || (loc === 'nigeria' && j.nigeria_relevant) || (loc === 'remote' && (j.location || '').toLowerCase().includes('remote'));
     return matchQ && matchSrc && matchLoc;
   });
 
@@ -118,7 +118,7 @@ function filter() {
   }
 
   grid.innerHTML = filtered.map((j, idx) => `
-    <div class="card" onclick="showDetails(${allJobs.indexOf(j)})">
+    <div class="card" data-job-index="${idx}" onclick="handleCardClick(this)">
       <div class="card-title">${j.title || 'Untitled'}</div>
       <div class="card-company">${j.company || 'Unknown company'}</div>
       <div class="card-meta">
@@ -132,37 +132,34 @@ function filter() {
   `).join('');
 }
 
+function handleCardClick(el) {
+  const idx = parseInt(el.getAttribute('data-job-index'));
+  showDetails(idx);
+}
+
 function showDetails(idx) {
   const j = allJobs[idx];
+  if (!j) return;
+  const desc = (j.description || '').split('\\n').join('<br>');
   const html = `
     <div class="modal-title">${j.title}</div>
     <div class="modal-company">${j.company}</div>
-    
     ${j.location ? `<div class="modal-field"><div class="modal-field-label">Location</div><div class="modal-field-value">📍 ${j.location}</div></div>` : ''}
     ${j.salary ? `<div class="modal-field"><div class="modal-field-label">Salary</div><div class="modal-field-value">💰 ${j.salary}</div></div>` : ''}
     ${j.posted ? `<div class="modal-field"><div class="modal-field-label">Posted</div><div class="modal-field-value">📅 ${j.posted}</div></div>` : ''}
     <div class="modal-field"><div class="modal-field-label">Source</div><div class="modal-field-value">🔗 ${j.source}</div></div>
     ${j.nigeria_relevant ? '<div class="modal-field"><div class="modal-field-label">Nigeria Relevant</div><div class="modal-field-value">✓ Yes</div></div>' : ''}
-    
-    ${j.description ? `<div class="modal-field"><div class="modal-field-label">Description</div><div class="modal-field-value">${j.description.replace(/\\n/g, '<br>')}</div></div>` : ''}
-    
-    ${j.apply_link ? `<div style="margin-top: 24px;"><a class="apply-btn" href="${j.apply_link}" target="_blank" style="display: block; text-align: center; padding: 12px;">Apply on external site →</a></div>` : ''}
+    ${desc ? `<div class="modal-field"><div class="modal-field-label">Description</div><div class="modal-field-value">${desc}</div></div>` : ''}
+    ${j.apply_link ? `<div style="margin-top: 12px;"><a class="apply-btn" href="${j.apply_link}" target="_blank" style="display: block; text-align: center; padding: 12px;">Apply on external site →</a></div>` : ''}
+    ${j.company ? `<div style="margin-top: 12px;"><a class="apply-btn" href="https://www.google.com/search?q=${encodeURIComponent(j.company + ' careers')}&oq=${encodeURIComponent(j.company + ' careers')}" target="_blank" style="display: block; text-align: center; padding: 10px; background:#eee; color:#111;">Search ${j.company} — jobs & careers</a></div>` : ''}
   `;
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal').classList.add('active');
 }
 
-function closeModal() {
-  document.getElementById('modal').classList.remove('active');
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-});
-
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target.id === 'modal') closeModal();
-});
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 
 async function refresh() {
   const btn = document.getElementById('refresh-btn');

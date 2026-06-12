@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
 
 from colorama import Fore, Style, init
-from config import OUTPUT_DIR, NIGERIA_BOOST_KEYWORDS, MAX_WORKERS
+from config import OUTPUT_DIR, NIGERIA_BOOST_KEYWORDS, MAX_WORKERS, COUNTRIES, BASE_QUERIES, GLOBAL_QUERIES
 from utils import logger, deduplicate_jobs
 
 init(autoreset=True)
@@ -72,7 +72,17 @@ def run_scrapers_concurrent(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     scrapers = []
     if cfg["sources"]["google"]:
-        scrapers.append(("Google Jobs", lambda: run_google_scraper(cfg["include_global"])))
+        # Build country-specific queries from BASE_QUERIES + COUNTRIES
+        queries = []
+        for country in COUNTRIES:
+            for base in BASE_QUERIES:
+                queries.append(f"{base} {country}")
+        # include global queries optionally
+        if cfg.get("include_global"):
+            queries.extend(GLOBAL_QUERIES)
+        # Capture queries in a local variable for the lambda
+        _queries = list(queries)
+        scrapers.append(("Google Jobs", lambda: run_google_scraper(cfg["include_global"], queries=_queries)))
     if cfg["sources"]["twitter"]:
         scrapers.append(("Twitter/X", lambda: run_twitter_scraper(cfg["include_global"])))
     if cfg["sources"]["free_boards"]:
