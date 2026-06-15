@@ -116,3 +116,88 @@
 2026-06-12 01:19:43 [job_scraper] [INFO] Results saved: ./output/jobs_20260612_0119.json | ./output/jobs_20260612_0119.csv
 2026-06-12 01:19:43 [job_scraper] [INFO] Complete: 110 jobs (59 Nigeria-relevant)
 2026-06-12 01:19:43 [job_scraper] [INFO] ============================================================
+2026-06-15 02:10:12 [job_scraper] [INFO] ============================================================
+2026-06-15 02:10:12 [job_scraper] [INFO] Starting job scraper...
+2026-06-15 02:10:12 [job_scraper] [INFO] Running 3 scrapers concurrently...
+2026-06-15 02:10:12 [job_scraper] [INFO] Searching Google Jobs: frontend developer Nigeria
+2026-06-15 02:10:12 [job_scraper] [INFO] Searching Twitter: frontend developer
+2026-06-15 02:10:12 [job_scraper] [INFO] Running RemoteOK scraper...
+2026-06-15 02:10:13 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=frontend+developer+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-15 02:10:13 [job_scraper] [INFO]   Found 0 results
+2026-06-15 02:10:13 [job_scraper] [INFO] Searching Twitter: React developer
+2026-06-15 02:10:14 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=React+developer+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-15 02:10:14 [job_scraper] [INFO]   Found 0 results
+2026-06-15 02:10:14 [job_scraper] [INFO] Searching Twitter: JavaScript developer
+2026-06-15 02:10:15 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=JavaScript+developer+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-15 02:10:15 [job_scraper] [INFO]   Found 0 results
+2026-06-15 02:10:15 [job_scraper] [INFO] Searching Twitter: web developer Nigeria
+2026-06-15 02:10:16 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-front-end-developer-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-front-end-developer-jobs.html
+2026-06-15 02:10:16 [job_scraper] [DEBUG] Serper result missing company for title='Front End Developer jobs - Lagos'
+2026-06-15 02:10:17 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=web+developer+Nigeria+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-15 02:10:17 [job_scraper] [INFO]   Found 0 results
+2026-06-15 02:10:17 [job_scraper] [INFO] Searching Twitter: remote developer jobs
+2026-06-15 02:10:17 [job_scraper] [INFO] RemoteOK: Found 1 dev jobs
+2026-06-15 02:10:17 [job_scraper] [INFO] Running LinkedIn scraper...
+2026-06-15 02:10:17 [job_scraper] [INFO]   Searching: frontend developer / Nigeria
+2026-06-15 02:10:18 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=remote+developer+jobs+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-15 02:10:18 [job_scraper] [INFO]   Found 0 results
+2026-06-15 02:10:18 [job_scraper] [INFO] Searching Twitter: hiring engineers
+2026-06-15 02:10:18 [job_scraper] [DEBUG] LinkedIn: Found 4 results for 'frontend developer' in Nigeria
+2026-06-15 02:10:18 [job_scraper] [INFO]   Searching: web developer / Lagos, Nigeria
+2026-06-15 02:10:19 [job_scraper] [ERROR] Twitter API HTTP error 402: 402 Client Error: Payment Required for url: https://api.twitter.com/2/tweets/search/recent?query=hiring+engineers+%28hiring+OR+job+OR+apply+OR+vacancy%29+-is%3Aretweet+lang%3Aen&max_results=50&tweet.fields=created_at%2Cauthor_id%2Cpublic_metrics&expansions=author_id&user.fields=username%2Cverified
+2026-06-15 02:10:19 [job_scraper] [INFO]   Found 0 results
+2026-06-15 02:10:19 [job_scraper] [DEBUG] Deduplication: 0 → 0 jobs
+2026-06-15 02:10:19 [job_scraper] [INFO] Twitter/X: 0 jobs
+2026-06-15 02:10:19 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.upwork.com/hire/front-end-developers/ng/: 403 Client Error: Forbidden for url: https://www.upwork.com/hire/front-end-developers/ng/
+2026-06-15 02:10:19 [job_scraper] [DEBUG] Serper result missing company for title='Hire the Best Front-End Developers in Nigeria'
+2026-06-15 02:10:20 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'web developer' in Lagos, Nigeria
+2026-06-15 02:10:20 [job_scraper] [INFO]   Searching: React developer / Nigeria
+2026-06-15 02:10:21 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.glassdoor.com/Job/nigeria-frontend-developer-jobs-SRCH_IL.0,7_IN177_KO8,26.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/nigeria-frontend-developer-jobs-SRCH_IL.0,7_IN177_KO8,26.htm
+2026-06-15 02:10:21 [job_scraper] [DEBUG] Serper result missing company for title='71 frontend developer Jobs in Nigeria, June 2026'
+2026-06-15 02:10:21 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'React developer' in Nigeria
+2026-06-15 02:10:21 [job_scraper] [INFO]   Searching: frontend developer / Remote
+2026-06-15 02:10:23 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'frontend developer' in Remote
+2026-06-15 02:10:23 [job_scraper] [INFO]   Searching: JavaScript developer / Africa
+2026-06-15 02:10:24 [job_scraper] [DEBUG] LinkedIn: Found 10 results for 'JavaScript developer' in Africa
+2026-06-15 02:10:24 [job_scraper] [DEBUG] Deduplication: 45 → 35 jobs
+2026-06-15 02:10:24 [job_scraper] [INFO] Free Boards: 35 jobs
+2026-06-15 02:10:28 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-front-end-developer-l-lagos-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-front-end-developer-l-lagos-jobs.html
+2026-06-15 02:10:28 [job_scraper] [DEBUG] Serper result missing company for title='18 Front End Developer Jobs in Lagos - 14 June 2026'
+2026-06-15 02:10:31 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://jobgether.com/remote-jobs/nigeria/frontend-developer: 403 Client Error: Forbidden for url: https://jobgether.com/remote-jobs/nigeria/frontend-developer
+2026-06-15 02:10:31 [job_scraper] [DEBUG] Serper result missing company for title='Remote Front-End Developer Jobs in Nigeria'
+2026-06-15 02:10:31 [job_scraper] [INFO]   Found 10 results
+2026-06-15 02:10:31 [job_scraper] [INFO] Searching Google Jobs: web developer Nigeria
+2026-06-15 02:10:42 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-web-developer-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-web-developer-jobs.html
+2026-06-15 02:10:42 [job_scraper] [DEBUG] Serper result missing company for title='100+ Web Developer Jobs, Employment 14 June 2026 - Indeed'
+2026-06-15 02:10:45 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.glassdoor.co.uk/Job/nigeria-web-developer-jobs-SRCH_IL.0,7_IN177_KO8,21.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.co.uk/Job/nigeria-web-developer-jobs-SRCH_IL.0,7_IN177_KO8,21.htm
+2026-06-15 02:10:45 [job_scraper] [DEBUG] Serper result missing company for title='160 web developer jobs in Nigeria, June 2026 | Glassdoor'
+2026-06-15 02:10:48 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.upwork.com/hire/web-designers/ng/: 403 Client Error: Forbidden for url: https://www.upwork.com/hire/web-designers/ng/
+2026-06-15 02:10:48 [job_scraper] [DEBUG] Serper result missing company for title='Hire the Best Web Designers in Nigeria - Upwork'
+2026-06-15 02:10:52 [job_scraper] [INFO]   Found 10 results
+2026-06-15 02:10:52 [job_scraper] [INFO] Searching Google Jobs: React developer Nigeria
+2026-06-15 02:10:56 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-react-developer-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-react-developer-jobs.html
+2026-06-15 02:10:56 [job_scraper] [DEBUG] Serper result missing company for title='15 React Developer Jobs - Lagos - Indeed'
+2026-06-15 02:11:02 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.upwork.com/hire/react-js-developers/ng/: 403 Client Error: Forbidden for url: https://www.upwork.com/hire/react-js-developers/ng/
+2026-06-15 02:11:02 [job_scraper] [DEBUG] Serper result missing company for title='Best React.js Developers in Nigeria (Jun 2026) - Upwork'
+2026-06-15 02:11:07 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.prosple.com/graduate-employers/ibcscorp-nigeria/jobs-internships/react-developer-intern: 403 Client Error: Forbidden for url: https://ng.prosple.com/graduate-employers/ibcscorp-nigeria/jobs-internships/react-developer-intern
+2026-06-15 02:11:07 [job_scraper] [DEBUG] Serper result missing company for title='React Developer Intern (Ongoing) at iBCScorp Nigeria'
+2026-06-15 02:11:08 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.glassdoor.com/Job/nigeria-react-developer-jobs-SRCH_IL.0,7_IN177_KO8,23.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/nigeria-react-developer-jobs-SRCH_IL.0,7_IN177_KO8,23.htm
+2026-06-15 02:11:08 [job_scraper] [DEBUG] Serper result missing company for title='88 react developer Jobs in Nigeria, April 2026 - Glassdoor'
+2026-06-15 02:11:09 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://jobgether.com/remote-jobs/nigeria/react-developer: 403 Client Error: Forbidden for url: https://jobgether.com/remote-jobs/nigeria/react-developer
+2026-06-15 02:11:09 [job_scraper] [DEBUG] Serper result missing company for title='Remote React Jobs in Nigeria - Work From Home - Jobgether'
+2026-06-15 02:11:10 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-react-js-l-lagos-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-react-js-l-lagos-jobs.html
+2026-06-15 02:11:10 [job_scraper] [DEBUG] Serper result missing company for title='25+ React Js Jobs, Employment in Lagos 13 June 2026 - Indeed'
+2026-06-15 02:11:10 [job_scraper] [INFO]   Found 10 results
+2026-06-15 02:11:10 [job_scraper] [INFO] Searching Google Jobs: JavaScript developer Nigeria
+2026-06-15 02:11:13 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.glassdoor.com/Job/nigeria-javascript-developer-jobs-SRCH_IL.0,7_IN177_KO8,28.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/nigeria-javascript-developer-jobs-SRCH_IL.0,7_IN177_KO8,28.htm
+2026-06-15 02:11:13 [job_scraper] [DEBUG] Serper result missing company for title='90 javascript developer Jobs in Nigeria, May 2026 | Glassdoor'
+2026-06-15 02:11:13 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-javascript-developer-l-lagos-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-javascript-developer-l-lagos-jobs.html
+2026-06-15 02:11:13 [job_scraper] [DEBUG] Serper result missing company for title='Javascript Developer jobs in Lagos - Indeed'
+2026-06-15 02:11:19 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.upwork.com/hire/javascript-developers/ng/: 403 Client Error: Forbidden for url: https://www.upwork.com/hire/javascript-developers/ng/
+2026-06-15 02:11:19 [job_scraper] [DEBUG] Serper result missing company for title='Hire the Best JavaScript Developers in Nigeria - Upwork'
+2026-06-15 02:11:23 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://ng.indeed.com/q-junior-javascript-developer-jobs.html: 403 Client Error: Forbidden for url: https://ng.indeed.com/q-junior-javascript-developer-jobs.html
+2026-06-15 02:11:23 [job_scraper] [DEBUG] Serper result missing company for title='12 Junior Javascript Developer Jobs - Lagos - Indeed'
+2026-06-15 02:11:35 [job_scraper] [DEBUG] fetch_page_details: failed to fetch https://www.payscale.com/research/NG/Skill=JavaScript/Salary: HTTPSConnectionPool(host='www.payscale.com', port=443): Max retries exceeded with url: /research/NG/Skill=JavaScript/Salary (Caused by NameResolutionError("HTTPSConnection(host='www.payscale.com', port=443): Failed to resolve 'www.payscale.com' ([Errno 11001] getaddrinfo failed)"))
+2026-06-15 02:11:35 [job_scraper] [DEBUG] Serper result missing company for title='JavaScript Salary in Nigeria | PayScale'
+2026-06-15 02:11:35 [job_scraper] [INFO]   Found 10 results
+2026-06-15 02:11:35 [job_scraper] [INFO] Searching Google Jobs: website Nigeria

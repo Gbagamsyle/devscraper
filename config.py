@@ -32,6 +32,8 @@ BASE_QUERIES = [
     "web developer",
     "React developer",
     "JavaScript developer",
+    "website", "UI developer",
+    
 ]
 
 LINKEDIN_SEARCHES = [
