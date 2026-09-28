@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
 
 from colorama import Fore, Style, init
-from config import OUTPUT_DIR, NIGERIA_BOOST_KEYWORDS, MAX_WORKERS, ROLE_PROFILES, ROLE_SEARCH_LOCATIONS
+from config import OUTPUT_DIR, MAX_WORKERS, ROLE_PROFILES, ROLE_SEARCH_LOCATIONS
 from utils import logger, deduplicate_jobs, classify_nigeria_eligibility
 
 init(autoreset=True)
@@ -33,14 +33,49 @@ CONFIG = {
 
 
 def tag_nigeria(job: Dict[str, Any]) -> Dict[str, Any]:
-    """Tag job as Nigeria-relevant based on keywords."""
-    text = " ".join([
-        str(job.get("title") or ""),
-        str(job.get("location") or ""),
-        str(job.get("description") or ""),
-    ]).lower()
-    job["nigeria_relevant"] = any(k in text for k in NIGERIA_BOOST_KEYWORDS)
+    """Treat Nigeria as relevant only when eligibility evidence says it is listed."""
+    eligibility = classify_nigeria_eligibility(job)
+    job.update(eligibility)
+    job["nigeria_relevant"] = eligibility["eligibility"] == "listed"
     return job
+
+
+def matches_role(job: Dict[str, Any], role: str) -> bool:
+    """Require role evidence in the job title, tags, or description."""
+    profile = ROLE_PROFILES.get(role)
+    if not profile:
+        return False
+    tags = job.get("tags") or []
+    if isinstance(tags, str):
+        tags = [tags]
+    evidence = " ".join(
+        str(value or "")
+        for value in [job.get("title"), *tags, job.get("description")]
+    ).casefold()
+    return any(term.casefold() in evidence for term in profile["match_terms"])
+
+
+def filter_jobs_for_role(jobs: List[Dict[str, Any]], role: str) -> List[Dict[str, Any]]:
+    """Apply the final selected-role check to every scraper result."""
+    return [job for job in jobs if matches_role(job, role)]
+
+
+def sort_by_eligibility(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Order eligible-listed jobs first and explicitly restricted jobs last."""
+    eligibility_order = {"listed": 0, "unclear": 1, "restricted": 2}
+    return sorted(jobs, key=lambda job: eligibility_order.get(job.get("eligibility"), 1))
+
+
+def build_google_queries(role: str) -> List[str]:
+    """Build the deliberately capped three-query Google budget per role."""
+    if role not in ROLE_PROFILES:
+        raise ValueError(f"Unknown role: {role}")
+    profile = ROLE_PROFILES[role]
+    scopes = ROLE_SEARCH_LOCATIONS
+    return [
+        f"{term} jobs {scope}"
+        for term, scope in zip(profile["queries"], scopes)
+    ]
 
 
 def save_results(jobs: List[Dict[str, Any]], output_dir: str, role: str = "frontend") -> tuple:
@@ -80,13 +115,7 @@ def run_scrapers_concurrent(cfg: Dict[str, Any], role: str = "frontend") -> List
     
     scrapers = []
     if cfg["sources"]["google"]:
-        profile = ROLE_PROFILES[role]
-        queries = [
-            f"{term} {location}"
-            for term in profile["queries"]
-            for location in ROLE_SEARCH_LOCATIONS
-        ]
-        _queries = list(queries)
+        _queries = build_google_queries(role)
         scrapers.append(("Google Jobs", lambda: run_google_scraper(cfg["include_global"], queries=_queries)))
     if cfg["sources"]["twitter"]:
         scrapers.append(("Twitter/X", lambda: run_twitter_scraper(cfg["include_global"], role=role)))
@@ -127,23 +156,28 @@ def main(role: str = "frontend"):
     # Run all scrapers concurrently
     all_jobs = run_scrapers_concurrent(cfg, role=role)
     
-    # Post-process: tag & deduplicate
+    # Reject cross-category search contamination before users see saved jobs.
     logger.info(f"Processing {len(all_jobs)} jobs...")
-    all_jobs = [tag_nigeria(j) for j in all_jobs]
+    role_matched_jobs = filter_jobs_for_role(all_jobs, role)
+    logger.info(f"Role validation ({role}): {len(all_jobs)} → {len(role_matched_jobs)} jobs")
+    all_jobs = role_matched_jobs
     for job in all_jobs:
-        job.update(classify_nigeria_eligibility(job))
+        tag_nigeria(job)
         job["role"] = role
     all_jobs = deduplicate_jobs(all_jobs)
+
+    # Explicitly restricted listings must never be promoted by incidental text.
+    all_jobs = sort_by_eligibility(all_jobs)
     
-    # Sort: Nigeria-relevant first
-    all_jobs.sort(key=lambda x: (not x.get("nigeria_relevant", False)))
-    
-    ng_count = sum(1 for j in all_jobs if j.get("nigeria_relevant"))
+    listed_count = sum(1 for j in all_jobs if j.get("eligibility") == "listed")
+    unclear_count = sum(1 for j in all_jobs if j.get("eligibility") == "unclear")
+    restricted_count = sum(1 for j in all_jobs if j.get("eligibility") == "restricted")
     
     print(f"\n{Fore.YELLOW}Summary:{Style.RESET_ALL}")
     print(f"  Total unique jobs : {len(all_jobs)}")
-    print(f"  Nigeria-relevant  : {ng_count}")
-    print(f"  Global/remote     : {len(all_jobs) - ng_count}")
+    print(f"  Eligibility listed: {listed_count}")
+    print(f"  Eligibility unclear: {unclear_count}")
+    print(f"  Restricted        : {restricted_count}")
     
     # Save results
     json_path, csv_path = save_results(all_jobs, cfg["output_dir"], role=role)
@@ -152,7 +186,7 @@ def main(role: str = "frontend"):
     print(f"  JSON → {json_path}")
     print(f"  CSV  → {csv_path}")
     
-    logger.info(f"Complete: {len(all_jobs)} jobs ({ng_count} Nigeria-relevant)")
+    logger.info(f"Complete: {len(all_jobs)} jobs ({listed_count} listed for Nigeria)")
     logger.info("=" * 60)
 
 

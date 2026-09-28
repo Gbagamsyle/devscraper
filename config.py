@@ -16,36 +16,37 @@ ROLE_PROFILES = {
     "frontend": {
         "label": "Frontend",
         "queries": ["frontend developer", "frontend engineer", "React developer"],
-        "terms": ["frontend developer", "frontend engineer", "React developer"],
+        "match_terms": ["frontend", "front-end", "react", "vue", "angular", "web developer"],
     },
     "backend": {
         "label": "Backend",
         "queries": ["backend developer", "backend engineer", "API developer"],
-        "terms": ["backend developer", "backend engineer", "API developer"],
+        "match_terms": ["backend", "back-end", "server-side", "api developer", "backend engineer"],
     },
     "full-stack": {
         "label": "Full-stack",
         "queries": ["full stack developer", "full-stack engineer", "full stack web developer"],
-        "terms": ["full stack developer", "full-stack engineer", "full stack web developer"],
+        "match_terms": ["full stack", "full-stack"],
     },
     "mobile": {
         "label": "Mobile",
         "queries": ["mobile app developer", "Android developer", "iOS developer"],
-        "terms": ["mobile app developer", "Android developer", "iOS developer"],
+        "match_terms": ["mobile", "android", "ios", "react native", "flutter"],
     },
     "data": {
         "label": "Data",
         "queries": ["data engineer", "data analyst", "machine learning engineer"],
-        "terms": ["data engineer", "data analyst", "machine learning engineer"],
+        "match_terms": ["data engineer", "data analyst", "data scientist", "machine learning", "ml engineer", "analytics engineer", "bi analyst"],
     },
     "product-design": {
         "label": "Product design",
         "queries": ["product designer", "UI UX designer", "UX designer"],
-        "terms": ["product designer", "UI UX designer", "UX designer"],
+        "match_terms": ["product designer", "ux designer", "ui designer", "ui/ux", "ux/ui", "interaction designer"],
     },
 }
 
-ROLE_SEARCH_LOCATIONS = ["Nigeria", "Africa", "Remote", "United States", "United Kingdom", "Europe"]
+ROLE_SEARCH_LOCATIONS = ["Nigeria", "Africa", "remote worldwide"]
+LINKEDIN_SEARCH_LOCATIONS = ["Nigeria", "Remote"]
 
 # Search queries
 NIGERIA_QUERIES = [
@@ -86,11 +87,6 @@ LINKEDIN_SEARCHES = [
 DEV_KEYWORDS = [
     "frontend", "front-end", "web developer", "react", "vue",
     "angular", "javascript", "typescript", "html", "css", "ui developer",
-]
-
-NIGERIA_BOOST_KEYWORDS = [
-    "nigeria", "lagos", "abuja", "port harcourt", "kano",
-    "ibadan", "remote africa", "african", "naira",
 ]
 
 # Output

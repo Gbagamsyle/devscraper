@@ -1,7 +1,8 @@
-import os, json, glob, hmac, secrets, threading
+import os, json, glob, hmac, secrets, threading, time
 from flask import Flask, jsonify, render_template_string, request, session
 from config import APP_SECRET_KEY, OUTPUT_DIR, OWNER_TOKEN, ROLE_PROFILES
 from job_runner import main as run_scraper
+from utils import logger
 
 app = Flask(__name__)
 app.secret_key = APP_SECRET_KEY
@@ -11,7 +12,101 @@ app.config.update(
   SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").casefold() == "true",
 )
 scraper_running = False
-scraper_lock = threading.Lock()
+PUBLIC_REFRESH_COOLDOWN_SECONDS = 60 * 60
+
+
+class RefreshLock:
+  """Non-blocking refresh lock shared by processes on the same host/filesystem."""
+
+  def __init__(self):
+    self._thread_lock = threading.Lock()
+    self._handle = None
+
+  def acquire(self, blocking=False):
+    if not self._thread_lock.acquire(blocking=blocking):
+      return False
+    handle = None
+    try:
+      os.makedirs(OUTPUT_DIR, exist_ok=True)
+      handle = open(os.path.join(OUTPUT_DIR, ".refresh.lock"), "a+b")
+      if os.name == "nt":
+        import msvcrt
+
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+          handle.write(b"0")
+          handle.flush()
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+      else:
+        import fcntl
+
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+      self._handle = handle
+      return True
+    except (OSError, BlockingIOError):
+      if handle:
+        handle.close()
+      self._thread_lock.release()
+      return False
+
+  def release(self):
+    handle, self._handle = self._handle, None
+    if handle:
+      try:
+        if os.name == "nt":
+          import msvcrt
+
+          handle.seek(0)
+          msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+          import fcntl
+
+          fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+      finally:
+        handle.close()
+        self._thread_lock.release()
+
+
+scraper_lock = RefreshLock()
+
+
+def _refresh_state_path():
+  return os.path.join(OUTPUT_DIR, ".refresh_state.json")
+
+
+def _read_refresh_state():
+  try:
+    with open(_refresh_state_path(), encoding="utf-8") as state_file:
+      return json.load(state_file)
+  except (OSError, json.JSONDecodeError):
+    return {}
+
+
+def _write_refresh_state(state):
+  os.makedirs(OUTPUT_DIR, exist_ok=True)
+  temp_path = f"{_refresh_state_path()}.{os.getpid()}.tmp"
+  with open(temp_path, "w", encoding="utf-8") as state_file:
+    json.dump(state, state_file)
+  os.replace(temp_path, _refresh_state_path())
+
+
+def _refresh_status_payload():
+  state = _read_refresh_state()
+  lock_available = scraper_lock.acquire(blocking=False)
+  if lock_available:
+    scraper_lock.release()
+  last_public_refresh = float(state.get("last_public_refresh", 0) or 0)
+  retry_after = max(
+    0,
+    int(last_public_refresh + PUBLIC_REFRESH_COOLDOWN_SECONDS - time.time()),
+  )
+  return {
+    "running": not lock_available,
+    "role": state.get("role", ""),
+    "retry_after": retry_after,
+    "available": lock_available and retry_after == 0,
+  }
 
 def get_latest_jobs(role="frontend"):
   role_output = os.path.join(OUTPUT_DIR, role)
@@ -41,6 +136,9 @@ HTML = """
   input { width: 220px; }
   #reload-btn { background: #1a1a1a; color: #fff; }
   #reload-btn:disabled { background: #888; cursor: wait; }
+  #fresh-search-btn { background: #176b45; color: #fff; }
+  #fresh-search-btn:disabled { background: #789; cursor: wait; }
+  #fresh-search-note { flex-basis: 100%; font-size: 12px; color: #666; }
   button { padding: 7px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
   .stats { padding: 1rem 2rem; font-size: 13px; color: #666; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 0 2rem 2rem; }
@@ -98,6 +196,8 @@ HTML = """
       <option value="remote">Remote only</option>
     </select>
     <button id="reload-btn" type="button" onclick="reloadSavedJobs()">Reload latest saved jobs</button>
+    <button id="fresh-search-btn" type="button" onclick="requestFreshSearch()">Search for fresh listings</button>
+    <span id="fresh-search-note" role="status">Fresh searches are shared across visitors and limited to one every 60 minutes.</span>
   </div>
 </header>
 <div class="stats" id="stats"></div>
@@ -119,6 +219,62 @@ async function loadJobs() {
   allJobs = await res.json();
   document.getElementById('stats').dataset.updated = res.headers.get('X-Updated-At') || '';
   filter();
+  await updateFreshSearchStatus();
+}
+
+function formatCooldown(seconds) {
+  const minutes = Math.ceil(seconds / 60);
+  return minutes >= 60 ? `${Math.ceil(minutes / 60)} hour(s)` : `${minutes} minute(s)`;
+}
+
+async function updateFreshSearchStatus() {
+  const button = document.getElementById('fresh-search-btn');
+  const note = document.getElementById('fresh-search-note');
+  const response = await fetch('/api/public-refresh-status');
+  const data = await response.json();
+  button.disabled = data.running || data.retry_after > 0;
+  if (data.running) {
+    note.textContent = `A fresh ${data.role || 'job'} search is running. Results will be saved for everyone.`;
+  } else if (data.retry_after > 0) {
+    note.textContent = `Shared search cooldown: try again in about ${formatCooldown(data.retry_after)}.`;
+  } else {
+    note.textContent = 'Request a fresh search for this role. Searches are shared across visitors and limited to one every 60 minutes.';
+  }
+}
+
+async function requestFreshSearch() {
+  const roleLabel = document.getElementById('role-filter').selectedOptions[0].text;
+  if (!window.confirm(`Search fresh ${roleLabel} listings now? This uses shared search quota; all visitors share a 60-minute cooldown.`)) return;
+  const button = document.getElementById('fresh-search-btn');
+  const note = document.getElementById('fresh-search-note');
+  button.disabled = true;
+  note.textContent = 'Starting a fresh search for this role...';
+  try {
+    const response = await fetch('/api/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: document.getElementById('role-filter').value })
+    });
+    const result = await response.json();
+    if (response.status === 429) {
+      note.textContent = `Search cooldown: try again in about ${formatCooldown(result.retry_after || 60)}.`;
+      return;
+    }
+    if (!response.ok) throw new Error(result.error || 'Could not start a fresh search.');
+    note.textContent = 'Searching job sources. This may take a few minutes; results will update for everyone.';
+    while (true) {
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      const statusResponse = await fetch('/api/public-refresh-status');
+      const status = await statusResponse.json();
+      if (!status.running) break;
+    }
+    await loadJobs();
+    note.textContent = 'Search complete. The latest results are now saved for everyone.';
+  } catch (error) {
+    note.textContent = error.message;
+  } finally {
+    await updateFreshSearchStatus();
+  }
 }
 
 async function reloadSavedJobs() {
@@ -241,6 +397,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 
 loadJobs();
+updateFreshSearchStatus();
 </script>
 </body>
 </html>
@@ -274,7 +431,7 @@ ADMIN_HTML = """
 <body>
 <main>
   <h1>Owner tools</h1>
-  <p>Private controls for refreshing saved job snapshots. Visitors can view these snapshots without signing in.</p>
+  <p>Private controls for refreshing saved job snapshots. Visitors can request a fresh selected-role search, subject to the shared cooldown.</p>
   <form id="login-form">
     <label for="token">Owner token</label>
     <input id="token" type="password" autocomplete="current-password" required>
@@ -451,13 +608,42 @@ def api_owner_logout():
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
     global scraper_running
-    if not owner_csrf_valid():
-        return jsonify({"error": "Owner sign-in required."}), 401
+    has_owner_session = bool(session.get("owner_authenticated"))
+    is_owner = owner_csrf_valid()
+    if has_owner_session and not is_owner:
+        return jsonify({"error": "Invalid owner session token."}), 401
     role = (request.get_json(silent=True) or {}).get("role", "frontend")
+    if not isinstance(role, str):
+        return jsonify({"error": "Unknown role."}), 400
+    if role == "all" and not is_owner:
+        return jsonify({"error": "Public refresh is limited to one selected role."}), 403
     if role != "all" and role not in ROLE_PROFILES:
         return jsonify({"error": "Unknown role."}), 400
     if not scraper_lock.acquire(blocking=False):
         return jsonify({"error": "A refresh is already running."}), 409
+
+    state = _read_refresh_state()
+    now = time.time()
+    last_public_refresh = float(state.get("last_public_refresh", 0) or 0)
+    retry_after = max(
+        0,
+        int(last_public_refresh + PUBLIC_REFRESH_COOLDOWN_SECONDS - now),
+    )
+    if not is_owner and retry_after > 0:
+        scraper_lock.release()
+        return jsonify({
+            "error": "A fresh search was recently requested. Please try again later.",
+            "retry_after": retry_after,
+        }), 429
+
+    if not is_owner:
+        state["last_public_refresh"] = now
+    state.update({"running": True, "role": role, "started_at": now})
+    try:
+        _write_refresh_state(state)
+    except OSError:
+        scraper_lock.release()
+        return jsonify({"error": "Could not save refresh state. Check server output-directory permissions."}), 500
     scraper_running = True
 
     def run():
@@ -466,19 +652,31 @@ def api_refresh():
             roles = ROLE_PROFILES if role == "all" else [role]
             for selected_role in roles:
                 run_scraper(role=selected_role)
+        except Exception as error:
+            logger.exception(f"Refresh failed for {role}: {error}")
         finally:
-            scraper_running = False
-            scraper_lock.release()
+            try:
+                scraper_running = False
+                current_state = _read_refresh_state()
+                current_state.update({"running": False, "finished_at": time.time()})
+                _write_refresh_state(current_state)
+            finally:
+                scraper_lock.release()
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"status": "started", "role": role}), 202
+
+
+@app.route("/api/public-refresh-status")
+def api_public_refresh_status():
+    return jsonify(_refresh_status_payload())
 
 
 @app.route("/api/status")
 def api_status():
     if not session.get("owner_authenticated"):
         return jsonify({"error": "Owner sign-in required."}), 401
-    return jsonify({"running": scraper_running})
+    return jsonify(_refresh_status_payload())
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

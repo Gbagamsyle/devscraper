@@ -79,10 +79,10 @@ def run_twitter_scraper(include_global: bool = True, role: str = "frontend") -> 
     
     all_jobs = []
     
-    queries = list(ROLE_PROFILES[role]["terms"])
+    queries = list(ROLE_PROFILES[role]["queries"])
     
     if include_global:
-        queries.extend(f"remote {term}" for term in ROLE_PROFILES[role]["terms"][:2])
+        queries.extend(f"remote {term}" for term in ROLE_PROFILES[role]["queries"][:2])
     
     for q in queries:
         logger.info(f"Searching Twitter: {q}")

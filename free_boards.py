@@ -3,7 +3,7 @@ import json
 import requests
 import re
 from typing import List, Dict, Any
-from config import TIMEOUT, ROLE_PROFILES
+from config import LINKEDIN_SEARCH_LOCATIONS, TIMEOUT, ROLE_PROFILES
 from utils import retry_with_backoff, deduplicate_jobs, logger
 
 
@@ -18,17 +18,23 @@ def fetch_remoteok(role: str = "frontend") -> List[Dict[str, Any]]:
     data = resp.json()
     
     jobs = []
-    role_terms = [term.casefold() for term in ROLE_PROFILES[role]["terms"]]
+    role_terms = [term.casefold() for term in ROLE_PROFILES[role]["match_terms"]]
     for job in data[1:]:  # First item is metadata
         title = (job.get("position") or "").lower()
         tags = " ".join(job.get("tags") or []).lower()
         combined = title + " " + tags
         
         if any(term in combined for term in role_terms):
+            source_location = (
+                job.get("location")
+                or job.get("location_string")
+                or job.get("region")
+                or "Remote"
+            )
             jobs.append({
                 "title": job.get("position"),
                 "company": job.get("company"),
-                "location": "Remote",
+                "location": str(source_location).strip(),
                 "posted": job.get("date"),
                 "salary": job.get("salary"),
                 "apply_link": job.get("url"),
@@ -101,8 +107,8 @@ def run_free_scraper(role: str = "frontend") -> List[Dict[str, Any]]:
     
     logger.info("Running LinkedIn scraper...")
     profile = ROLE_PROFILES[role]
-    for keywords in profile["terms"]:
-        for location in ("Nigeria", "Africa", "Remote"):
+    for keywords in profile["queries"]:
+        for location in LINKEDIN_SEARCH_LOCATIONS:
             logger.info(f"  Searching: {keywords} / {location}")
             try:
                 li = fetch_linkedin_rss(keywords, location)
