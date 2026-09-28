@@ -2,13 +2,14 @@
 import json
 import csv
 import os
+import argparse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
 
 from colorama import Fore, Style, init
-from config import OUTPUT_DIR, NIGERIA_BOOST_KEYWORDS, MAX_WORKERS, COUNTRIES, BASE_QUERIES, GLOBAL_QUERIES
-from utils import logger, deduplicate_jobs
+from config import OUTPUT_DIR, NIGERIA_BOOST_KEYWORDS, MAX_WORKERS, ROLE_PROFILES, ROLE_SEARCH_LOCATIONS
+from utils import logger, deduplicate_jobs, classify_nigeria_eligibility
 
 init(autoreset=True)
 
@@ -42,10 +43,11 @@ def tag_nigeria(job: Dict[str, Any]) -> Dict[str, Any]:
     return job
 
 
-def save_results(jobs: List[Dict[str, Any]], output_dir: str) -> tuple:
+def save_results(jobs: List[Dict[str, Any]], output_dir: str, role: str = "frontend") -> tuple:
     """Save results to JSON and CSV files."""
+    output_dir = os.path.join(output_dir, role)
     os.makedirs(output_dir, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     json_path = f"{output_dir}/jobs_{ts}.json"
     csv_path = f"{output_dir}/jobs_{ts}.csv"
@@ -55,38 +57,41 @@ def save_results(jobs: List[Dict[str, Any]], output_dir: str) -> tuple:
 
     fields = [
         "title", "company", "location", "posted", "salary",
-        "apply_link", "source", "nigeria_relevant", "description"
+        "apply_link", "source", "sources", "role", "nigeria_relevant",
+        "eligibility", "eligibility_reason", "eligibility_evidence", "description"
     ]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
-        w.writerows(jobs)
+        csv_jobs = []
+        for job in jobs:
+            row = dict(job)
+            row["sources"] = json.dumps(row.get("sources", []), ensure_ascii=False)
+            csv_jobs.append(row)
+        w.writerows(csv_jobs)
 
     logger.info(f"Results saved: {json_path} | {csv_path}")
     return json_path, csv_path
 
 
-def run_scrapers_concurrent(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+def run_scrapers_concurrent(cfg: Dict[str, Any], role: str = "frontend") -> List[Dict[str, Any]]:
     """Run all enabled scrapers concurrently."""
     all_jobs = []
     
     scrapers = []
     if cfg["sources"]["google"]:
-        # Build country-specific queries from BASE_QUERIES + COUNTRIES
-        queries = []
-        for country in COUNTRIES:
-            for base in BASE_QUERIES:
-                queries.append(f"{base} {country}")
-        # include global queries optionally
-        if cfg.get("include_global"):
-            queries.extend(GLOBAL_QUERIES)
-        # Capture queries in a local variable for the lambda
+        profile = ROLE_PROFILES[role]
+        queries = [
+            f"{term} {location}"
+            for term in profile["queries"]
+            for location in ROLE_SEARCH_LOCATIONS
+        ]
         _queries = list(queries)
         scrapers.append(("Google Jobs", lambda: run_google_scraper(cfg["include_global"], queries=_queries)))
     if cfg["sources"]["twitter"]:
-        scrapers.append(("Twitter/X", lambda: run_twitter_scraper(cfg["include_global"])))
+        scrapers.append(("Twitter/X", lambda: run_twitter_scraper(cfg["include_global"], role=role)))
     if cfg["sources"]["free_boards"]:
-        scrapers.append(("Free Boards", lambda: run_free_scraper()))
+        scrapers.append(("Free Boards", lambda: run_free_scraper(role=role)))
     if cfg["sources"].get("alternative"):
         scrapers.append(("Alternative Sources", lambda: run_alternative_scrapers()))
     
@@ -110,19 +115,24 @@ def run_scrapers_concurrent(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
     return all_jobs
 
 
-def main():
+def main(role: str = "frontend"):
     """Main orchestrator."""
+    if role not in ROLE_PROFILES:
+        raise ValueError(f"Unknown role: {role}")
     logger.info("=" * 60)
-    logger.info("Starting job scraper...")
+    logger.info(f"Starting job scraper for role: {role}")
     
     cfg = CONFIG
     
     # Run all scrapers concurrently
-    all_jobs = run_scrapers_concurrent(cfg)
+    all_jobs = run_scrapers_concurrent(cfg, role=role)
     
     # Post-process: tag & deduplicate
     logger.info(f"Processing {len(all_jobs)} jobs...")
     all_jobs = [tag_nigeria(j) for j in all_jobs]
+    for job in all_jobs:
+        job.update(classify_nigeria_eligibility(job))
+        job["role"] = role
     all_jobs = deduplicate_jobs(all_jobs)
     
     # Sort: Nigeria-relevant first
@@ -136,7 +146,7 @@ def main():
     print(f"  Global/remote     : {len(all_jobs) - ng_count}")
     
     # Save results
-    json_path, csv_path = save_results(all_jobs, cfg["output_dir"])
+    json_path, csv_path = save_results(all_jobs, cfg["output_dir"], role=role)
     
     print(f"\n{Fore.GREEN}Saved:{Style.RESET_ALL}")
     print(f"  JSON → {json_path}")
@@ -147,4 +157,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Refresh saved job listings.")
+    parser.add_argument("--role", choices=ROLE_PROFILES, default="frontend", help="Role snapshot to refresh")
+    parser.add_argument("--all-roles", action="store_true", help="Refresh every role snapshot in sequence")
+    args = parser.parse_args()
+    selected_roles = ROLE_PROFILES if args.all_roles else [args.role]
+    for selected_role in selected_roles:
+        main(role=selected_role)

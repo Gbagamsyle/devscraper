@@ -3,12 +3,12 @@ import json
 import requests
 import re
 from typing import List, Dict, Any
-from config import LINKEDIN_SEARCHES, TIMEOUT, DEV_KEYWORDS
-from utils import retry_with_backoff, deduplicate_jobs, filter_keywords, logger
+from config import TIMEOUT, ROLE_PROFILES
+from utils import retry_with_backoff, deduplicate_jobs, logger
 
 
 @retry_with_backoff()
-def fetch_remoteok() -> List[Dict[str, Any]]:
+def fetch_remoteok(role: str = "frontend") -> List[Dict[str, Any]]:
     """Fetch dev jobs from RemoteOK API."""
     remoteok_url = "https://remoteok.com/api"
     headers = {"User-Agent": "Mozilla/5.0 (job-scraper-personal)"}
@@ -18,12 +18,13 @@ def fetch_remoteok() -> List[Dict[str, Any]]:
     data = resp.json()
     
     jobs = []
+    role_terms = [term.casefold() for term in ROLE_PROFILES[role]["terms"]]
     for job in data[1:]:  # First item is metadata
         title = (job.get("position") or "").lower()
         tags = " ".join(job.get("tags") or []).lower()
         combined = title + " " + tags
         
-        if filter_keywords(combined, DEV_KEYWORDS):
+        if any(term in combined for term in role_terms):
             jobs.append({
                 "title": job.get("position"),
                 "company": job.get("company"),
@@ -71,7 +72,8 @@ def fetch_linkedin_rss(keywords: str = "frontend developer", location: str = "Ni
             jobs.append({
                 "title": titles[i].strip() if i < len(titles) else "",
                 "company": companies[i].strip() if i < len(companies) else "",
-                "location": locations_list[i].strip() if i < len(locations_list) else location,
+                # The query location is not proof of the job's actual eligibility.
+                "location": locations_list[i].strip() if i < len(locations_list) else "",
                 "posted": "",
                 "salary": "",
                 "apply_link": links[i] if i < len(links) else "",
@@ -86,25 +88,27 @@ def fetch_linkedin_rss(keywords: str = "frontend developer", location: str = "Ni
         return []
 
 
-def run_free_scraper() -> List[Dict[str, Any]]:
+def run_free_scraper(role: str = "frontend") -> List[Dict[str, Any]]:
     """Run RemoteOK and LinkedIn scrapers."""
     all_jobs = []
     
     logger.info("Running RemoteOK scraper...")
     try:
-        rok = fetch_remoteok()
+        rok = fetch_remoteok(role)
         all_jobs.extend(rok)
     except Exception as e:
         logger.error(f"RemoteOK scraper failed: {e}")
     
     logger.info("Running LinkedIn scraper...")
-    for keywords, location in LINKEDIN_SEARCHES:
-        logger.info(f"  Searching: {keywords} / {location}")
-        try:
-            li = fetch_linkedin_rss(keywords, location)
-            all_jobs.extend(li)
-        except Exception as e:
-            logger.error(f"  Error: {e}")
+    profile = ROLE_PROFILES[role]
+    for keywords in profile["terms"]:
+        for location in ("Nigeria", "Africa", "Remote"):
+            logger.info(f"  Searching: {keywords} / {location}")
+            try:
+                li = fetch_linkedin_rss(keywords, location)
+                all_jobs.extend(li)
+            except Exception as e:
+                logger.error(f"  Error: {e}")
     
     return deduplicate_jobs(all_jobs)
 

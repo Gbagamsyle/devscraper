@@ -7,6 +7,45 @@ load_dotenv()
 # API Keys
 SERPER_KEY = os.getenv("SERPER_KEY", "")
 TWITTER_BEARER = os.getenv("TWITTER_BEARER", "")
+OWNER_TOKEN = os.getenv("OWNER_TOKEN", "")
+APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "")
+
+# One role is scraped per refresh; role-specific queries avoid multiplying every
+# search across all roles and keep results isolated by role.
+ROLE_PROFILES = {
+    "frontend": {
+        "label": "Frontend",
+        "queries": ["frontend developer", "frontend engineer", "React developer"],
+        "terms": ["frontend developer", "frontend engineer", "React developer"],
+    },
+    "backend": {
+        "label": "Backend",
+        "queries": ["backend developer", "backend engineer", "API developer"],
+        "terms": ["backend developer", "backend engineer", "API developer"],
+    },
+    "full-stack": {
+        "label": "Full-stack",
+        "queries": ["full stack developer", "full-stack engineer", "full stack web developer"],
+        "terms": ["full stack developer", "full-stack engineer", "full stack web developer"],
+    },
+    "mobile": {
+        "label": "Mobile",
+        "queries": ["mobile app developer", "Android developer", "iOS developer"],
+        "terms": ["mobile app developer", "Android developer", "iOS developer"],
+    },
+    "data": {
+        "label": "Data",
+        "queries": ["data engineer", "data analyst", "machine learning engineer"],
+        "terms": ["data engineer", "data analyst", "machine learning engineer"],
+    },
+    "product-design": {
+        "label": "Product design",
+        "queries": ["product designer", "UI UX designer", "UX designer"],
+        "terms": ["product designer", "UI UX designer", "UX designer"],
+    },
+}
+
+ROLE_SEARCH_LOCATIONS = ["Nigeria", "Africa", "Remote", "United States", "United Kingdom", "Europe"]
 
 # Search queries
 NIGERIA_QUERIES = [

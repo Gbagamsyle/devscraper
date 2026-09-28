@@ -1,7 +1,7 @@
 """Twitter/X Jobs scraper using API v2."""
 import requests
 from typing import List, Dict, Any
-from config import TWITTER_BEARER, TIMEOUT
+from config import TWITTER_BEARER, TIMEOUT, ROLE_PROFILES
 from utils import retry_with_backoff, deduplicate_jobs, logger
 
 
@@ -71,7 +71,7 @@ def search_twitter_jobs(query: str, max_results: int = 100) -> List[Dict[str, An
         return []
 
 
-def run_twitter_scraper(include_global: bool = True) -> List[Dict[str, Any]]:
+def run_twitter_scraper(include_global: bool = True, role: str = "frontend") -> List[Dict[str, Any]]:
     """Run Twitter Jobs scraper."""
     if not TWITTER_BEARER:
         logger.info("TWITTER_BEARER not set; skipping Twitter scraper")
@@ -79,18 +79,10 @@ def run_twitter_scraper(include_global: bool = True) -> List[Dict[str, Any]]:
     
     all_jobs = []
     
-    queries = [
-        "frontend developer",
-        "React developer",
-        "JavaScript developer",
-        "web developer Nigeria",
-    ]
+    queries = list(ROLE_PROFILES[role]["terms"])
     
     if include_global:
-        queries.extend([
-            "remote developer jobs",
-            "hiring engineers",
-        ])
+        queries.extend(f"remote {term}" for term in ROLE_PROFILES[role]["terms"][:2])
     
     for q in queries:
         logger.info(f"Searching Twitter: {q}")
